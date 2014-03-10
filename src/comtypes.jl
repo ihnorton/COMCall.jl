@@ -17,8 +17,10 @@ GUID() = GUID(0,0,0,t_data4(0,0,0,0,0,0,0,0))
 
 immutable CLSID
     guid::Array{GUID,1}
-    CLSID() = new([GUID()])
+    CLSID(guid) = new(guid)
 end
+CLSID() = CLSID([GUID()])
+
 
 #
 # Win API aliases
@@ -124,11 +126,30 @@ end
 CLSID(id::String) = CLSIDFromString(id)
 
 #
+# Interfaces
+#
+
+abstract IUnknown
+abstract IDispatch <: IUnknown
+
+immutable _IUnknown <: IUnknown
+    ptr::Ptr{Void}
+end
+
+immutable _IDispatch <: IDispatch
+    ptr::Ptr{Void}
+end
+
+getimpl(::Type{IUnknown}) = _IUnknown
+getimpl(::Type{_IUnknown}) = _IUnknown
+# TODO: more IIDs as instantiable types
+
+#
 # Builtin IIDs
 #
 
 baremodule BaseIID
-    import ..CLSID
+    import ..COMCall, ..CLSID
     const IUnknown = CLSID("{00000000-0000-0000-C000-000000000046}")
     const RecordInfo = CLSID("{0000002F-0000-0000-C000-000000000046}")
     const IRecordInfo = CLSID("{0000002F-0000-0000-C000-000000000046}")
@@ -141,33 +162,13 @@ baremodule BaseIID
     const IID_NULL = CLSID("{00000000-0000-0000-0000-000000000000}")
 end
 
-#
-# COMObject / COMInstance
-#
-
-abstract COMObject
-
-type COMInstance <: COMObject
-    ptr::Ptr{Void}
+# TODO: this is kind of ugly
+function getimpl(x::CLSID)
+    if x == BaseIID.IUnknown
+        return IUknown
+    elseif x == BaseIID.IDispatch
+        return _IDispatch
+    else
+        error("Unimplemented IID class")
+    end
 end
-
-#
-# IUnknown interface
-#
-#   QueryInterface
-#   AddRef
-#   Release
-abstract IUnknown
-
-#
-# IDispatch methods
-#
-#   <: IUnknown
-#       GetTypeInfoCount
-#       GetTypeInfo
-#       GetIDsOfNames
-#       Invoke
-
-abstract IDispatch <: IUnknown
-
-

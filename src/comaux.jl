@@ -27,3 +27,5 @@ show(io::IO, x::CLSID) = print(io, "CLSID{", x.guid[1], "}")
 
 convert(::Type{Ptr{CLSID}}, x::CLSID) = reinterpret(Ptr{CLSID}, pointer(x.guid))
 convert(::Type{Ptr{GUID}}, x::CLSID) = pointer(x.guid)
+
+convert(::Type{Ptr{Void}}, x::IUnknown) = x.ptr

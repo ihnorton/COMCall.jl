@@ -20,29 +20,64 @@ function CLSIDFromProgID(id::String)
     return clsid
 end
 
-function StringFromCLSID(clsid::CLSID)
-    s = Ptr{Uint16}[C_NULL]
-    res = ccall( (:StringFromCLSID, l_ole32), stdcall, Uint32,
-                (REFCLSID, Ptr{Uint16}), clsid, s)
-    return (res, s)
-end
+# TODO
+#function StringFromCLSID(clsid::CLSID)
+#    s = Ptr{Uint16}[C_NULL]
+#    res = ccall( (:StringFromCLSID, l_ole32), stdcall, Uint32,
+#                (REFCLSID, Ptr{Uint16}), clsid, s)
+#    return (res, s)
+#end
 
-function CoCreateInstance(clsid::CLSID; clsctx=None)
+function CoCreateInstance(clsid::CLSID; iid=None, clsctx=None)
     if (clsctx == None)
         clsctx = CLSCTX.SERVER
+    end
+    if (iid == None)
+        iid = BaseIID.IUnknown
     end
     
     ppv = [C_NULL]
     res = ccall( (:CoCreateInstance, l_ole32), Uint32,
                 (LPCLSID, LPUNKNOWN, DWORD, REFIID, Ptr{Ptr{Void}}),
-                clsid, C_NULL, clsctx, BaseIID.IUnknown, ppv)
+                clsid, C_NULL, clsctx, iid, ppv)
     if (res == REGDB.E_CLASSNOTREG)
         error("Class not registered ($clsid)")
     end
 
-    COMInstance(ppv[1])
+    getimpl(IUnknown)(ppv[1])
 end
 
+################################################################################
+
+#
+# IUnknown interface
+#
+#   QueryInterface
+#   AddRef
+#   Release
+
+function QueryInterface{T <: IUnknown}(o::T, clsid::CLSID; err=false)
+    obj = [C_NULL]
+    vfptr = unsafe_load(unsafe_load(pointer(Ptr{Ptr{Void}},o.ptr)),1)
+    res = ccall( vfptr, thiscall, Uint32, 
+                (Ptr{Void}, REFIID, Ptr{Ptr{Void}}), o.ptr, clsid, obj)
+    if (res != HRESULT.S_OK)
+        err && error("QueryInterface: $clsid not supported")
+        return C_NULL
+    end
+    return getimpl(clsid)(obj[1])
+end
+
+#
+# IDispatch methods
+#
+#   <: IUnknown
+#       GetTypeInfoCount
+#       GetTypeInfo
+#       GetIDsOfNames
+#       Invoke
+
+################################################################################
 #
 # High-level API
 #
