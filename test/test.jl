@@ -1,7 +1,12 @@
 using COMCall
 using Base.Test
 
-@test CoInitialize()
+CoInitialize()
+iecls = COMCall.CLSIDFromProgID("InternetExplorer.Application")
+ie = COM[iecls]
+@test typeof(COMCall.QueryInterface(ie, COMCall.BaseIID.IDispatch)) ==  COMCall._IDispatch
 
-@test ie = COM["InternetExplorer.Application"]
-@test ie[:Navigate]("www.julialang.org")
+
+# Goal:
+#@test ie = COM["InternetExplorer.Application"]
+#@test ie[:Navigate]("www.julialang.org")

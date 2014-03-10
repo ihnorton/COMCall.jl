@@ -8,7 +8,7 @@ import Base: show, convert, getindex
 #
 # Exports
 #
-export COM, getindex, CoInitialize, CoCreateInstance
+export COM, getindex, BaseIID, QueryInterface, CoInitialize, CoCreateInstance
 
 #
 # Implementation
