@@ -154,7 +154,7 @@ getindex(::Type{IID}, x::Type) = IID(BaseIIDs[x].guid)
 function getindex(t::IID, x::Ptr{Void})
     k = None
     for k in keys(BaseIIDs)
-        if BaseIIDs[k] == t break
+        if BaseIIDs[k].guid == t break
         else continue
         end
     end
