@@ -8,6 +8,24 @@ type COMGlobal
 end
 
 ################################################################################
+# @vcall macro for virtual function calls
+#   usage: @vcall(object, offset, arguments...)
+#
+#       object::Ptr{Void}
+#       offset: vtable offset
+#       arguments: arguments in Arg::Type form
+################################################################################
+
+macro vcall(this, idx, rtype, args...)
+    argnames = {x.args[1] for x in args}
+    argtypes = :((Ptr{Void}, $({eval(x.args[2]) for x in args}...)))
+    quote
+        local fptr = unsafe_load(unsafe_load(pointer(Ptr{Ptr{Void}},$(this))),$(idx)+1)
+        ccall(fptr, thiscall, $(esc(rtype)), ($(esc(argtypes))), $(esc(this)),$(argnames...))
+    end
+end
+
+################################################################################
 # Extras
 ################################################################################
 
@@ -33,7 +51,7 @@ show(io::IO, x::GUID) = @printf(io, "%08X-%04hX-%04hX-%02hhX%02hhX%02hhX%02hhX%0
 
 show(io::IO, x::CLSID) = print(io, "CLSID{", x.guid, "}")
 
-convert(::Type{Ptr{CLSID}}, x::CLSID) = reinterpret(Ptr{CLSID}, x.guid)
+convert(T::Type{Ptr{IID}}, x::CLSID) = reinterpret(Ptr{IID}, Base.ptr_arg_convert(Ptr{GUID},x.guid))
 convert(::Type{Ptr{GUID}}, x::CLSID) = pointer(x.guid)
 convert(::Type{Ptr{Void}}, x::IUnknown) = x.ptr
-convert(::Type{Ptr{IID}}, x::IID) = x.guid
+convert(::Type{Ptr{IID}}, x::IID) = pointer(x.guid)

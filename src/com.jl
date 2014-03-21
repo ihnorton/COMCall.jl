@@ -43,7 +43,6 @@ function CoCreateInstance(clsid::CLSID; iid=None, clsctx=None)
     if (res == REGDB.E_CLASSNOTREG)
         error("Class not registered ($clsid)")
     end
-
     iid[ppv[1]]
 end
 
@@ -58,10 +57,12 @@ end
 
 function QueryInterface{T <: IUnknown}(this::Ptr{T}, clsid::CLSID; err=false)
     obj = [C_NULL]
-    res = ccall( getvtptr(this,1), thiscall, Uint32, 
-                (THISPTR,
-                REFIID, Ptr{Ptr{Void}}),
-                this, clsid, obj)
+    #fptr = getvtptr(this,1)
+    #res = ccall( fptr, thiscall, Uint32, 
+    #            (THISPTR,
+    #            REFIID, Ptr{Ptr{Void}}),
+    #            this, clsid, obj)
+    res = @vcall(this, 1, HResult, clsid::REFIID, obj::Ptr{Ptr{Void}})
     if (res != HRESULT.S_OK)
         err && error("QueryInterface: $clsid not supported")
         return C_NULL
@@ -90,14 +91,12 @@ end
 
 function GetTypeInfoCount{T <: IDispatch}(this::Ptr{T})
     pctinfo = [zero(Cuint)]
-    res = ccall( getvtptr(this, 4), thiscall, Uint32,
-                (THISPTR,
-                Ptr{PCTINFO},),
-                pctinfo)
-    res != HRESULT_S_OK && error("failed GetTypeInfoCount")
+    res = @vcall(this, 4, HResult, pctinfo::Ptr{Cuint})
+    show(res)
+    res != HRESULT.S_OK && error("failed GetTypeInfoCount")
     return pctinfo[1]
 end
-    
+
 # TODO
 type ITypeInfo
 end
@@ -110,7 +109,7 @@ function GetTypeInfo{T <: IDispatch}(this::Ptr{T}, tinfokind::Cuint)
                 (THISPTR,
                 Cuint, LCID, Ptr{Ptr{ITypeInfo}}),
                 o.ptr, tinfokind, lcid, itypeinfo)
-    res != HRESULT_S_OK && error("failed GetTypeInfo")
+    res != HRESULT.S_OK && error("failed GetTypeInfo")
     return itypeinfo[1]
 end
 

@@ -47,6 +47,7 @@ baremodule COINIT
     SPEED_OVER_MEMORY  = 0x8
 end
 
+typealias HResult Uint32
 baremodule HRESULT
     S_OK          =   0x00000000
     S_FALSE       =   0x00000001
@@ -150,6 +151,7 @@ const BaseIIDs = {
     None => CLSID("{00000000-0000-0000-0000-000000000000}")
     }
 getindex(::Type{IID}, x::Type) = IID(BaseIIDs[x].guid)
+getindex(::Type{CLSID}, x::Type) = BaseIIDs[x]
 
 function getindex(t::IID, x::Ptr{Void})
     k = None
