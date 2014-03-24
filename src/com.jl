@@ -57,14 +57,15 @@ end
 
 function QueryInterface{T <: IUnknown}(this::Ptr{T}, clsid::CLSID; err=false)
     obj = [C_NULL]
+    println("calling")
     res = @vcall(this, 1, HResult, &clsid::REFIID, pointer(obj)::Ptr{Ptr{Void}})
     if (res != HRESULT.S_OK)
         err && error("QueryInterface: $clsid not supported")
         return C_NULL
     end
-    println(res)
-    println(obj)
-    return getimpl(clsid)(obj[1])
+    println("res: ", res)
+    println("obj: ", obj)
+    return reinterpret(Ptr{typeof(clsid)},obj[1])
 end
 
 function AddRef{T<:IUnknown}(this::Ptr{T})
