@@ -16,18 +16,21 @@ GUID() = GUID(0,0,0,t_data4(0,0,0,0,0,0,0,0))
 
 
 immutable CLSID
-    guid::GUID
+    guid::Array{GUID,1}
     CLSID(guid) = new(guid)
 end
-CLSID() = CLSID(GUID())
+CLSID() = CLSID([GUID()])
 
 
 #
 # Win API aliases
 #
 immutable IID
-    guid::GUID
+    guid::Array{GUID,1}
+    IID(guid) = new(guid)
 end
+IID() = IID([GUID()])
+
 typealias REFIID Ptr{IID}
 typealias LPIID Ptr{GUID}
 typealias REFCLSID Ptr{CLSID}
@@ -120,9 +123,9 @@ end # module CLSCTX
 function CLSIDFromString(id::String)
     out = [GUID()]
     res = ccall( (:CLSIDFromString, l_ole32), Uint32,
-                (LPCOLESTR, LPCLSID), utf16(id), out)
+                (LPCOLESTR, LPCLSID), utf16(id), pointer(out))
     res != HRESULT.S_OK && error("CLSIDFromString: Unable to convert $id to CLSID")
-    return CLSID(out[1])
+    return CLSID(out)
 end
 CLSID(id::String) = CLSIDFromString(id)
 
