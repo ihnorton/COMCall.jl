@@ -14,10 +14,10 @@ CoInitializeEx() = CoInitializeEx(COINIT.APARTMENTTHREADED)
 CoInitialize() = CoInitializeEx()
 
 function CLSIDFromProgID(id::String)
-    clsid = CLSID()
-    res = ccall( (:CLSIDFromProgID, l_ole32), stdcall, Uint32, (LPCOLESTR, LPCLSID), utf16(id), clsid)
+    clsid = [GUID()]
+    res = ccall( (:CLSIDFromProgID, l_ole32), stdcall, Uint32, (LPCOLESTR, LPCLSID), utf16(id), pointer(clsid))
     res == HRESULT.S_OK || error("Unable to locate program $id")
-    return clsid
+    return CLSID(clsid[1])
 end
 
 # TODO
@@ -37,15 +37,12 @@ function CoCreateInstance(clsid::CLSID; iid=None, clsctx=None)
     end
     
     ppv = [C_NULL]
-    println(iid)
-    println(clsid)
     res = ccall( (:CoCreateInstance, l_ole32), Uint32,
                 (LPCLSID, LPUNKNOWN, DWORD, REFIID, Ptr{Ptr{Void}}),
-                clsid, C_NULL, clsctx, iid, ppv)
+                &clsid, C_NULL, clsctx, &iid, ppv)
     if (res == REGDB.E_CLASSNOTREG)
         error("Class not registered ($clsid)")
     end
-    println("res: ", ppv)
     iid[ppv[1]]
 end
 
@@ -60,11 +57,13 @@ end
 
 function QueryInterface{T <: IUnknown}(this::Ptr{T}, clsid::CLSID; err=false)
     obj = [C_NULL]
-    res = @vcall(this, 1, HResult, clsid::REFIID, pointer(obj)::Ptr{Ptr{Void}})
+    res = @vcall(this, 1, HResult, &clsid::REFIID, pointer(obj)::Ptr{Ptr{Void}})
     if (res != HRESULT.S_OK)
         err && error("QueryInterface: $clsid not supported")
         return C_NULL
     end
+    println(res)
+    println(obj)
     return getimpl(clsid)(obj[1])
 end
 

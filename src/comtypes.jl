@@ -16,20 +16,20 @@ GUID() = GUID(0,0,0,t_data4(0,0,0,0,0,0,0,0))
 
 
 immutable CLSID
-    guid::Array{GUID,1}
+    guid::GUID
     CLSID(guid) = new(guid)
 end
-CLSID() = CLSID([GUID()])
+CLSID() = CLSID(GUID())
 
 
 #
 # Win API aliases
 #
 immutable IID
-    guid::Array{GUID,1}
+    guid::GUID
     IID(guid) = new(guid)
 end
-IID() = IID([GUID()])
+IID() = IID(GUID())
 
 typealias REFIID Ptr{IID}
 typealias LPIID Ptr{GUID}
@@ -125,7 +125,7 @@ function CLSIDFromString(id::String)
     res = ccall( (:CLSIDFromString, l_ole32), Uint32,
                 (LPCOLESTR, LPCLSID), utf16(id), pointer(out))
     res != HRESULT.S_OK && error("CLSIDFromString: Unable to convert $id to CLSID")
-    return CLSID(out)
+    return CLSID(out[1])
 end
 CLSID(id::String) = CLSIDFromString(id)
 
@@ -153,7 +153,7 @@ const BaseIIDs = {
     #ITypeLib2 => CLSID("{00020411-0000-0000-C000-000000000046}"),
     None => CLSID("{00000000-0000-0000-0000-000000000000}")
     }
-getindex(::Type{IID}, x::Type) = IID(BaseIIDs[x].guid)
+getindex(::Type{IID}, x::Type) = IID(BaseIIDs[x])
 getindex(::Type{CLSID}, x::Type) = BaseIIDs[x]
 
 function getindex(t::IID, x::Ptr{Void})

@@ -54,6 +54,6 @@ end
 convert(T::Type{Ptr{CLSID}}, x::CLSID) = reinterpret(Ptr{CLSID}, pointer(x.guid))
 convert(::Type{Ptr{GUID}}, x::CLSID) = pointer(x.guid)
 convert(::Type{Ptr{IID}}, x::IID) = pointer(x.guid)
-#convert(::Type{GUID}, x::CLSID) = x.guid
+convert(::Type{GUID}, x::CLSID) = x.guid
 
 convert(::Type{Ptr{Void}}, x::IUnknown) = x.ptr
